@@ -1,59 +1,95 @@
-function getTemp(response) {
-  console.log(response.data);
-  let weatherDescription = document.querySelector("#description");
-  weatherDescription.innerHTML = `${response.data.weather[0].description}`;
-  let roundedTemp = Math.round(response.data.main.temp);
-  let temperature = document.querySelector(".temperature");
-  temperature.innerHTML = `${roundedTemp}`;
-  let humidity = document.querySelector("#Humidity");
-  humidity.innerHTML = `Humidity: ${response.data.main.humidity} %`;
-  let wind = document.querySelector("#Wind");
-  wind.innerHTML = `Wind Speeds: ${response.data.wind.speed} mph`;
-  let h1 = document.querySelector("h1");
-  h1.innerHTML = `${response.data.name}`;
+let date = document.querySelector("#weather-date");
+let days = document.querySelectorAll(".day__block");
+let description = document.querySelector("#weather-description");
+let icon = document.querySelector(".weather__icon--today");
+let place = document.querySelector("#weather-location");
+let precipitation = document.querySelector("#precipitation-probality");
+let temperature = document.querySelector(".weather-temp--today");
+let wind = document.querySelector("#wind-speed");
+let refreshBtn = document.querySelector("#weather-refresh");
+let form = document.querySelector("#weather__form");
+let formLocation = form.querySelector("#weather__form-location");
+
+let apiUrl = "https://api.openweathermap.org";
+let apiKey = "5f472b7acba333cd8a035ea85a0d4d4c";
+
+function friendlyDay(dayNumber) {
+  let days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  return days[dayNumber];
 }
 
-function showLocation(position) {
-  console.log(position.coords);
-  console.log(position.coords.longitude);
-  let latitude = position.coords.latitude;
-  let longitude = position.coords.longitude;
-  let apiKey = "5201594abea9f3e38b70e65b11a80c24";
-  let units = "imperial";
-  let apiUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&appid=${apiKey}&units=${units}`;
-
-  axios.get(apiUrl).then(getTemp);
+function friendlyMinutes(minutesNumber) {
+  if (minutesNumber < 10) {
+    return "0" + minutesNumber;
+  } else {
+    return minutesNumber;
+  }
 }
 
-let todaysDate = document.querySelector("#date");
-let currentTime = new Date();
-todaysDate.innerHTML = formatDate(currentTime);
-
-let getCurrentWeather = document.querySelector("#current-button");
-getCurrentWeather.addEventListener("click", getTemp);
-
-navigator.geolocation.getCurrentPosition(showLocation);
-
-function formatDate(date) {
+function friendlyDate(date) {
+  let day = friendlyDay(date.getDay());
   let hours = date.getHours();
-  if (hours < 10) {
-    hours = `0${hours}`;
-  }
-  let minutes = date.getMinutes();
-  if (minutes < 10) {
-    minutes = `0${minutes}`;
-  }
-  let dayIndex = date.getDay();
-  let days = [
-    "Sunday",
-    "Monday",
-    "Tuesday",
-    "Wednesday",
-    "Thursday",
-    "Friday",
-    "Saturday",
-  ];
-  let day = days[dayIndex];
+  let minutes = friendlyMinutes(date.getMinutes());
 
-  return `${day} ${hours}:${minutes}`;
+  return day + " " + hours + ":" + minutes;
 }
+
+function refreshWeather(queryParams) {
+  let apiParams = `appid=${apiKey}&units=imperial`;
+  axios
+    .get(`${apiUrl}/data/2.5/weather?${apiParams}&${queryParams}`)
+    .then(function (response) {
+      date.innerHTML = friendlyDate(new Date());
+      place.innerHTML = response.data.name;
+      description.innerHTML = response.data.weather[0].main;
+      temperature.innerHTML = Math.round(response.data.main.temp);
+      wind.innerHTML = Math.round(response.data.wind.speed) + "mph";
+      precipitation.innerHTML = Math.round(response.data.main.humidity) + "%";
+
+      icon.setAttribute(
+        "src",
+        "http://openweathermap.org/img/w/" +
+          response.data.weather[0].icon +
+          ".png"
+      );
+    });
+
+  axios
+    .get(`${apiUrl}/data/2.5/forecast?${apiParams}&${queryParams}`)
+    .then(function (response) {
+      document
+        .querySelectorAll(".day__block")
+        .forEach(function (element, index) {
+          let day = new Date(response.data.list[index].dt_txt);
+          element.querySelector(".day__block-date").innerHTML =
+            friendlyDate(day);
+          element.querySelector(".day__block-temp").innerHTML = Math.round(
+            response.data.list[index].main.temp
+          );
+
+          element
+            .querySelector(".day__block-image")
+            .setAttribute(
+              "src",
+              "http://openweathermap.org/img/w/" +
+                response.data.list[index].weather[0].icon +
+                ".png"
+            );
+        });
+    });
+}
+
+form.addEventListener("submit", function (event) {
+  refreshWeather("q=" + form.querySelector("#weather__form-location").value);
+  event.preventDefault();
+});
+
+refreshBtn.addEventListener("click", function () {
+  navigator.geolocation.getCurrentPosition(function (position) {
+    refreshWeather(
+      "lat=" + position.coords.latitude + "&lon=" + position.coords.longitude
+    );
+  });
+});
+
+refreshWeather("q=Roseville");
