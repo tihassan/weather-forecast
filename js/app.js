@@ -13,12 +13,12 @@ let formLocation = form.querySelector("#weather__form-location");
 let apiUrl = "https://api.openweathermap.org";
 let apiKey = "5f472b7acba333cd8a035ea85a0d4d4c";
 
-function friendlyDay(dayNumber) {
+function formatDay(dayNumber) {
   let days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   return days[dayNumber];
 }
 
-function friendlyMinutes(minutesNumber) {
+function formatMinutes(minutesNumber) {
   if (minutesNumber < 10) {
     return "0" + minutesNumber;
   } else {
@@ -26,10 +26,10 @@ function friendlyMinutes(minutesNumber) {
   }
 }
 
-function friendlyDate(date) {
-  let day = friendlyDay(date.getDay());
+function formatDate(date) {
+  let day = formatDay(date.getDay());
   let hours = date.getHours();
-  let minutes = friendlyMinutes(date.getMinutes());
+  let minutes = formatMinutes(date.getMinutes());
 
   return day + " " + hours + ":" + minutes;
 }
@@ -39,7 +39,7 @@ function refreshWeather(queryParams) {
   axios
     .get(`${apiUrl}/data/2.5/weather?${apiParams}&${queryParams}`)
     .then(function (response) {
-      date.innerHTML = friendlyDate(new Date());
+      date.innerHTML = formatDate(new Date());
       place.innerHTML = response.data.name;
       description.innerHTML = response.data.weather[0].main;
       temperature.innerHTML = Math.round(response.data.main.temp);
@@ -61,8 +61,7 @@ function refreshWeather(queryParams) {
         .querySelectorAll(".day__block")
         .forEach(function (element, index) {
           let day = new Date(response.data.list[index].dt_txt);
-          element.querySelector(".day__block-date").innerHTML =
-            friendlyDate(day);
+          element.querySelector(".day__block-date").innerHTML = formatDate(day);
           element.querySelector(".day__block-temp").innerHTML = Math.round(
             response.data.list[index].main.temp
           );

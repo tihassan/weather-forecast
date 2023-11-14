@@ -18,10 +18,10 @@ main {
 
 h1 {
   color: #878787;
-  font-size: 38px;
+  font-size: 24px;
   font-weight: 500;
   margin: 0;
-  line-height: 48px;
+  line-height: 28px;
 }
 
 button {
@@ -70,6 +70,11 @@ input[type="text"] {
   color: rgba(39, 33, 66, 0.4);
   line-height: 24px;
   font-weight: 500;
+}
+
+.precipitation-probality,
+wind-speed {
+  color: #f65282;
 }
 
 .weather-container {
@@ -178,10 +183,17 @@ input[type="text"] {
   text-align: center;
 }
 
-.day__block-temp {
+.day__block-temp-max {
   font-size: 13px;
   line-height: 15px;
   color: #878787;
+}
+
+.day__block-temp-min {
+  font-size: 13px;
+  line-height: 15px;
+  color: #878787;
+  opacity: 0.5;
 }
 
 .day__block--selected {
