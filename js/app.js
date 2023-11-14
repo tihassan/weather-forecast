@@ -1,94 +1,102 @@
-let date = document.querySelector("#weather-date");
-let days = document.querySelectorAll(".day__block");
-let description = document.querySelector("#weather-description");
-let icon = document.querySelector(".weather__icon--today");
-let place = document.querySelector("#weather-location");
-let precipitation = document.querySelector("#precipitation-probality");
-let temperature = document.querySelector(".weather-temp--today");
-let wind = document.querySelector("#wind-speed");
-let refreshBtn = document.querySelector("#weather-refresh");
-let form = document.querySelector("#weather__form");
-let formLocation = form.querySelector("#weather__form-location");
+function refreshWeather(response) {
+  let temperatureElement = document.querySelector("#temperature");
+  let temperature = response.data.temperature.current;
+  let cityElement = document.querySelector("#city");
+  let descriptionElement = document.querySelector("#description");
+  let humidityElement = document.querySelector("#humidity");
+  let windSpeedElement = document.querySelector("#wind-speed");
+  let timeElement = document.querySelector("#time");
+  let date = new Date(response.data.time * 1000);
+  let iconElement = document.querySelector("#icon");
 
-let apiUrl = "https://api.openweathermap.org";
-let apiKey = "5f472b7acba333cd8a035ea85a0d4d4c";
+  cityElement.innerHTML = response.data.city;
+  timeElement.innerHTML = formatDate(date);
+  descriptionElement.innerHTML = response.data.condition.description;
+  humidityElement.innerHTML = `${response.data.temperature.humidity}%`;
+  windSpeedElement.innerHTML = `${response.data.wind.speed}mph`;
+  temperatureElement.innerHTML = Math.round(temperature);
+  iconElement.innerHTML = `<img src="${response.data.condition.icon_url}" class="weather-app-icon" />`;
 
-function formatDay(dayNumber) {
-  let days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-  return days[dayNumber];
-}
-
-function formatMinutes(minutesNumber) {
-  if (minutesNumber < 10) {
-    return "0" + minutesNumber;
-  } else {
-    return minutesNumber;
-  }
+  getForecast(response.data.city);
 }
 
 function formatDate(date) {
-  let day = formatDay(date.getDay());
+  let minutes = date.getMinutes();
   let hours = date.getHours();
-  let minutes = formatMinutes(date.getMinutes());
+  let days = [
+    "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+  ];
+  let day = days[date.getDay()];
 
-  return day + " " + hours + ":" + minutes;
+  if (minutes < 10) {
+    minutes = `0${minutes}`;
+  }
+
+  return `${day} ${hours}:${minutes}`;
 }
 
-function refreshWeather(queryParams) {
-  let apiParams = `appid=${apiKey}&units=imperial`;
-  axios
-    .get(`${apiUrl}/data/2.5/weather?${apiParams}&${queryParams}`)
-    .then(function (response) {
-      date.innerHTML = formatDate(new Date());
-      place.innerHTML = response.data.name;
-      description.innerHTML = response.data.weather[0].main;
-      temperature.innerHTML = Math.round(response.data.main.temp);
-      wind.innerHTML = Math.round(response.data.wind.speed) + "mph";
-      precipitation.innerHTML = Math.round(response.data.main.humidity) + "%";
-
-      icon.setAttribute(
-        "src",
-        "http://openweathermap.org/img/w/" +
-          response.data.weather[0].icon +
-          ".png"
-      );
-    });
-
-  axios
-    .get(`${apiUrl}/data/2.5/forecast?${apiParams}&${queryParams}`)
-    .then(function (response) {
-      document
-        .querySelectorAll(".day__block")
-        .forEach(function (element, index) {
-          let day = new Date(response.data.list[index].dt_txt);
-          element.querySelector(".day__block-date").innerHTML = formatDate(day);
-          element.querySelector(".day__block-temp").innerHTML = Math.round(
-            response.data.list[index].main.temp
-          );
-
-          element
-            .querySelector(".day__block-image")
-            .setAttribute(
-              "src",
-              "http://openweathermap.org/img/w/" +
-                response.data.list[index].weather[0].icon +
-                ".png"
-            );
-        });
-    });
+function searchCity(city) {
+  let apiKey = "2o2bdbcab43a18201d93b94bbc090ft7";
+  let apiUrl = `https://api.shecodes.io/weather/v1/current?query=${city}&key=${apiKey}&units=imperial`;
+  axios.get(apiUrl).then(refreshWeather);
 }
 
-form.addEventListener("submit", function (event) {
-  refreshWeather("q=" + form.querySelector("#weather__form-location").value);
+function handleSearchSubmit(event) {
   event.preventDefault();
-});
+  let searchInput = document.querySelector("#search-form-input");
 
-refreshBtn.addEventListener("click", function () {
-  navigator.geolocation.getCurrentPosition(function (position) {
-    refreshWeather(
-      "lat=" + position.coords.latitude + "&lon=" + position.coords.longitude
-    );
+  searchCity(searchInput.value);
+}
+
+function formatDay(timestamp) {
+  let date = new Date(timestamp * 1000);
+  let days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+  return days[date.getDay()];
+}
+
+function getForecast(city) {
+  let apiKey = "2o2bdbcab43a18201d93b94bbc090ft7";
+  let apiUrl = `https://api.shecodes.io/weather/v1/forecast?query=${city}&key=${apiKey}&units=imperial`;
+  axios(apiUrl).then(displayForecast);
+  console.log(apiUrl);
+}
+
+function displayForecast(response) {
+  console.log(response.data);
+  let forecastHtml = "";
+
+  response.data.daily.forEach(function (day, index) {
+    if (index < 5) {
+      forecastHtml =
+        forecastHtml +
+        `  
+        <div class="weather-forecast-day">
+        <div class="weather-forecast-date">${formatDay(day.time)}</div>
+        <img src="${day.condition.icon_url}" class="weather-forecast-icon">
+          <div class="weather-forecast-temperatures">
+            <div class="weather-forecast-temperature">
+              <strong>${Math.round(day.temperature.maximum)}°</strong></div>
+            <div class="weather-forecast-temperature">${Math.round(
+              day.temperature.minimum
+            )}°</div>
+        </div>
+        </div>
+    `;
+    }
   });
-});
 
-refreshWeather("q=Roseville");
+  let forecastElement = document.querySelector("#forecast");
+  forecastElement.innerHTML = forecastHtml;
+}
+
+let searchFormElement = document.querySelector("#search-form");
+searchFormElement.addEventListener("submit", handleSearchSubmit);
+
+searchCity("Roseville");
